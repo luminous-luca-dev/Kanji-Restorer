@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>部首→漢字 変換ツール</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; max-width: 600px; margin: auto; }
+        textarea { width: 100%; height: 150px; margin-bottom: 10px; font-size: 16px; padding: 10px; }
+        button { padding: 10px 20px; font-size: 16px; cursor: pointer; background-color: #007BFF; color: white; border: none; border-radius: 5px; }
+        button:hover { background-color: #0056b3; }
+    </style>
+</head>
+<body>
+
+    <h2>エントリーシート用 文字化け解消ツール</h2>
+    <p>コピーした文章を下の枠に貼り付けて、「変換する」ボタンを押してください。</p>
+
+    <textarea id="inputText" placeholder="ここに文章を貼り付けてください..."></textarea>
+    <button onclick="convertText()">普通の漢字に変換する</button>
+
+    <h3>変換結果（これをコピーして使ってください）</h3>
+    <textarea id="outputText" readonly></textarea>
+
+    <script>
+        // 部首（康熙部首・CJK部首補助）と、対応する通常の漢字（CJK統合漢字）の辞書
+        // ※実際には200個以上の部首がありますが、ここではよくエラーになる代表的なものを登録しています。
+        const radicalMap = {
+            '⽊': '木', // 康熙部首の木 (U+2F4A) -> 通常の木 (U+6728)
+            '⾜': '足', // 康熙部首の足 (U+2F9B) -> 通常の足 (U+8DB3)
+            '⼿': '手',
+            '⼼': '心',
+            '⽔': '水',
+            '⽕': '火',
+            '⼟': '土',
+            '⽯': '石',
+            '⽷': '糸',
+            '⾦': '金',
+            '⾬': '雨',
+            '⾷': '食',
+            '⾺': '馬',
+            '⿂': '魚',
+            '⿃': '鳥',
+            '⼀': '一',
+            '⼈': '人',
+            '⼊': '入',
+            '⼋': '八',
+            '⼗': '十',
+            '⼝': '口',
+            '⽇': '日',
+            '⽉': '月',
+            '⾞': '車',
+            '⾔': '言'
+            // 必要に応じてどんどん追加できます
+        };
+
+        function convertText() {
+            let text = document.getElementById('inputText').value;
+
+            // 辞書を使って順番に置換していく
+            for (const [radical, kanji] of Object.entries(radicalMap)) {
+                // 文字列内のすべての対象文字を置換
+                text = text.split(radical).join(kanji); 
+                // ※最近のブラウザなら text.replaceAll(radical, kanji) でもOKです
+            }
+
+            document.getElementById('outputText').value = text;
+        }
+    </script>
+
+</body>
+</html>
