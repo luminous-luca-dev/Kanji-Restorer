@@ -2,31 +2,120 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>部首→漢字 変換ツール</title>
     <style>
-        body { font-family: sans-serif; padding: 20px; max-width: 600px; margin: auto; }
-        textarea { width: 100%; height: 150px; margin-bottom: 10px; font-size: 16px; padding: 10px; }
-        button { padding: 10px 20px; font-size: 16px; cursor: pointer; background-color: #007BFF; color: white; border: none; border-radius: 5px; }
-        button:hover { background-color: #0056b3; }
+        /* 全体のリセットとベース設定 */
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { 
+            font-family: "Helvetica Neue", Arial, "Hiragino Kaku Gothic ProN", "Hiragino Sans", Meiryo, sans-serif; 
+            background-color: #d0ecff; /* 背景を少し落ち着いた色に */
+            color: #333;
+            padding: 40px 20px;
+            display: flex;
+            justify-content: center;
+        }
+
+        /* メインのカード型コンテナ */
+        .container {
+            background-color: #ffffff;
+            width: 100%;
+            max-width: 650px;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05); /* うっすらとした影で浮き出させる */
+        }
+
+        h2 { font-size: 1.4rem; margin-bottom: 10px; color: #1a1a1a; }
+        p.description { font-size: 0.95rem; color: #666; margin-bottom: 20px; line-height: 1.5; }
+
+        /* 入力エリア */
+        .input-group { margin-bottom: 20px; }
+        textarea { 
+            width: 100%; 
+            height: 160px; 
+            font-size: 16px; 
+            padding: 15px; 
+            border: 1px solid #dcdfe6; 
+            border-radius: 8px; 
+            resize: vertical; 
+            background-color: #fafbfc;
+            transition: all 0.2s ease;
+        }
+        /* 入力中のフォーカス状態を綺麗に */
+        textarea:focus {
+            outline: none;
+            border-color: #007BFF;
+            box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.2);
+            background-color: #ffffff;
+        }
+
+        /* ボタン類 */
+        .action-area { text-align: center; margin-bottom: 30px; }
+        button { 
+            padding: 12px 28px; 
+            font-size: 16px; 
+            font-weight: bold;
+            cursor: pointer; 
+            border: none; 
+            border-radius: 8px; 
+            transition: background-color 0.2s, transform 0.1s;
+        }
+        .btn-convert {
+            background-color: #007BFF; 
+            color: white; 
+            box-shadow: 0 4px 6px rgba(0, 123, 255, 0.2);
+        }
+        .btn-convert:hover { background-color: #0056b3; transform: translateY(-1px); }
+        .btn-convert:active { transform: translateY(1px); }
+
+        /* 結果エリア */
+        .result-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        h3 { font-size: 1.2rem; color: #1a1a1a; }
+        
+        .btn-copy {
+            background-color: #e2e8f0;
+            color: #4a5568;
+            padding: 8px 16px;
+            font-size: 14px;
+        }
+        .btn-copy:hover { background-color: #cbd5e0; }
+
     </style>
 </head>
 <body>
 
-    <h2>エントリーシート用 「使用できない文字が含まれています」解消ツール</h2>
-    <p>コピーした文章を下の枠に貼り付けて、「変換する」ボタンを押してください。</p>
+    <div class="container">
+        <h2>エントリーシート文字化け 解消ツール</h2>
+        <p class="description">
+            「使用できない文字が含まれています」というエラーが出た場合、無意識に特殊な漢字（部首）が混ざっている可能性があります。<br>
+            コピーした文章を下の枠に貼り付けて、「変換する」ボタンを押してください。
+        </p>
 
-    <textarea id="inputText" placeholder="ここに文章を貼り付けてください..."></textarea>
-    <button onclick="convertText()">普通の漢字に変換する</button>
+        <div class="input-group">
+            <textarea id="inputText" placeholder="ここに文章を貼り付けてください..."></textarea>
+        </div>
+        
+        <div class="action-area">
+            <button class="btn-convert" onclick="convertText()">普通の漢字に変換する</button>
+        </div>
 
-    <h3>変換結果（これをコピーして使ってください）</h3>
-    <textarea id="outputText" readonly></textarea>
+        <div class="result-header">
+            <h3>変換結果</h3>
+            <button class="btn-copy" id="copyBtn" onclick="copyResult()">コピーする</button>
+        </div>
+        <textarea id="outputText" readonly placeholder="変換された文章がここに表示されます..."></textarea>
+    </div>
 
     <script>
         // 部首（康熙部首・CJK部首補助）と、対応する通常の漢字（CJK統合漢字）の辞書
-        // ※実際には200個以上の部首がありますが、ここではよくエラーになる代表的なものを登録しています。
+        // エントリーシート等で混入しやすいものを大幅に拡充しています
         const radicalMap = {
-            // 康熙部首の木 (U+2F4A) -> 通常の木 (U+6728)
-            // 康熙部首の足 (U+2F9B) -> 通常の足 (U+8DB3) 等
             // --- 1〜2画 ---
             '⼀': '一', '⼈': '人', '⼊': '入', '⼋': '八', '⼒': '力', 
             '⼗': '十', '⼚': '厂', '⼛': '厶', '⼜': '又',
@@ -80,17 +169,36 @@
 
         function convertText() {
             let text = document.getElementById('inputText').value;
+            if(!text) return; // 空なら何もしない
 
-            // 辞書を使って順番に置換していく
+            // 置換処理
             for (const [radical, kanji] of Object.entries(radicalMap)) {
-                // 文字列内のすべての対象文字を置換
                 text = text.split(radical).join(kanji); 
-                // ※最近のブラウザなら text.replaceAll(radical, kanji) でもOKです
             }
 
             document.getElementById('outputText').value = text;
+            
+            // ボタンの表示をリセット
+            const copyBtn = document.getElementById('copyBtn');
+            copyBtn.textContent = 'コピーする';
+            copyBtn.style.backgroundColor = '#e2e8f0';
+            copyBtn.style.color = '#4a5568';
+        }
+
+        function copyResult() {
+            const outputText = document.getElementById('outputText');
+            if (!outputText.value) return;
+
+            // クリップボードにコピー
+            navigator.clipboard.writeText(outputText.value).then(() => {
+                const copyBtn = document.getElementById('copyBtn');
+                copyBtn.textContent = 'コピーしました！';
+                copyBtn.style.backgroundColor = '#48bb78'; // 成功色（緑）
+                copyBtn.style.color = 'white';
+            }).catch(err => {
+                alert('コピーに失敗しました。手動でコピーしてください。');
+            });
         }
     </script>
-
 </body>
 </html>
